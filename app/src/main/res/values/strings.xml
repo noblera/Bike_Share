@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Bike Share</string>
+    <string name="generic_button">Generic</string>
+    <string name="errand_button">Errand</string>
+    <string name="road_button">Road</string>
+    <string name="reserved_toast">Already Reserved Bike</string>
+    <string name="unavailable_toast">No Available Bikes</string>
+    <string name="not_reserved_yet">Bike Not Reserved Yet</string>
+    <string name="title_activity_reserve">Unlock Bike</string>
+    <string name="unlock_button">Unlock</string>
+    <string name="more_options_button">More Options</string>
+    <string name="generic_type">Generic Bike</string>
+    <string name="errand_type">Errand Bike</string>
+    <string name="road_type">Road Bike</string>
+</resources>
