@@ -1,5 +1,8 @@
 package com.noble.bikeshare;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,17 +13,25 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.w3c.dom.Text;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.UUID;
 
 public class ReserveActivity extends AppCompatActivity {
 
     private static final String EXTRA_LOCATION = "com.noble.bikeshare.location";
     private static final String EXTRA_BIKE_TYPE = "com.noble.bikeshare.biketype";
     private static final String EXTRA_ID = "com.noble.bikeshare.id";
+
+    private final String MY_UUID = "55253730-6d50-9898-7b4a2f5fff08";
 
     public static Intent newIntent(Context packageContext, String location, String bikeType, int id) {
         Intent i = new Intent(packageContext, ReserveActivity.class);
@@ -40,6 +51,13 @@ public class ReserveActivity extends AppCompatActivity {
     private String mBikeType;
     private int mId;
     private String mLocation;
+
+    private BluetoothAdapter mBA;
+    private BluetoothSocket mSocket;
+    private BluetoothDevice mDevice;
+
+    private InputStream mInStream;
+    private OutputStream mOutStream;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +79,64 @@ public class ReserveActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // start unlock process
+                mBA = BluetoothAdapter.getDefaultAdapter();
+                if (mBA == null) {
+                    Toast.makeText(ReserveActivity.this, R.string.bluetooth_not_supported, Toast.LENGTH_SHORT).show();
+                } else {
+                    if (!mBA.isEnabled()) {
+                        Toast.makeText(ReserveActivity.this, "Turning on bluetooth", Toast.LENGTH_SHORT).show();
+                        Intent turnOn = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                        startActivityForResult(turnOn, 0);
+                    } else {
+                        Set<BluetoothDevice> pairedDevices = mBA.getBondedDevices();
+                        if (pairedDevices.size() > 0) {
+                            for (BluetoothDevice device : pairedDevices) {
+                                if (device.getName().equals("Galaxy Nexus")) {
+                                    mDevice = device;
+                                    break;
+                                }
+                            }
+                        }
+                        // set up connection to lock
+                        try {
+                            mSocket = mDevice.createRfcommSocketToServiceRecord(UUID.fromString(MY_UUID));
+                        } catch (IOException e) { }
+
+                        try {
+                            mSocket.connect();
+                        } catch (IOException connectException) {
+                            try {
+                                mSocket.close();
+                            } catch (IOException closeException) { }
+                        }
+                        // connected, attempt to send password for verification
+                        try {
+                            mInStream = mSocket.getInputStream();
+                            mOutStream = mSocket.getOutputStream();
+                        } catch(IOException e) { }
+                        String tmp_pass = "test";
+                        byte[] byte_pass = tmp_pass.getBytes();
+                        try {
+                            mOutStream.write(byte_pass);
+                        } catch (IOException e) { }
+                        // sent password, wait for confirmation
+                        byte[] buffer = new byte[1024];
+                        int bytes; // number of bytes returned
+                        while (true) {
+                            try {
+                                bytes = mInStream.read(buffer);
+                            } catch (IOException e) {
+                                break;
+                            }
+                        }
+                        if (buffer.toString().equals("y")) {
+                            Toast.makeText(ReserveActivity.this, "Bike Unlocked", Toast.LENGTH_SHORT).show();
+                            mUnlockButton.setText(R.string.lock_button);
+                        } else {
+                            Toast.makeText(ReserveActivity.this, "Bike Unlock Failed", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
             }
         });
     }
