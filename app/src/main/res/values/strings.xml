@@ -17,4 +17,5 @@
     <string name="lock_name">Galaxy Nexus</string>
     <string name="unlock_success">Bike Unlocked</string>
     <string name="unlock_failure">Bike unlock failed</string>
+    <string name="unreserve_bike_title">Unreserve Bike?</string>
 </resources>

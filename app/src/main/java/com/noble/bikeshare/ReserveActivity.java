@@ -31,6 +31,7 @@ public class ReserveActivity extends AppCompatActivity {
     private static final String EXTRA_LOCATION = "com.noble.bikeshare.location";
     private static final String EXTRA_BIKE_TYPE = "com.noble.bikeshare.biketype";
     private static final String EXTRA_ID = "com.noble.bikeshare.id";
+    private static final String EXTRA_BIKE_RETURNED = "com.noble.bikeshare.bike_returned";
 
     private final String MY_UUID = "c899f350-eab9-11e5-a837-0800200c9a66";
 
@@ -60,10 +61,14 @@ public class ReserveActivity extends AppCompatActivity {
     private InputStream mInStream;
     private OutputStream mOutStream;
 
+    private boolean mBikeReturned;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reserve);
+
+        mBikeReturned = false;
 
         mLocation = getIntent().getStringExtra(EXTRA_LOCATION);
         mLocationTextView = (TextView) findViewById(R.id.reserve_location_text_view);
@@ -171,15 +176,31 @@ public class ReserveActivity extends AppCompatActivity {
                             if (locked) {
                                 Toast.makeText(ReserveActivity.this, "Bike is locked", Toast.LENGTH_SHORT).show();
                                 mUnlockButton.setText(R.string.unlock_button);
+                                setBikeReturnedResult(true);
+                                mBikeReturned = true;
                             }
                         }
                         try {
                             mSocket.close();
                         } catch (IOException e) { }
+
+                        if (mBikeReturned) {
+                            finish();
+                        }
                     }
                 }
             }
         });
+    }
+
+    private void setBikeReturnedResult(boolean isBikeReturned) {
+        Intent data = new Intent();
+        data.putExtra(EXTRA_BIKE_RETURNED, isBikeReturned);
+        setResult(RESULT_OK, data);
+    }
+
+    public static boolean wasBikeReturned(Intent result) {
+        return result.getBooleanExtra(EXTRA_BIKE_RETURNED, false);
     }
 
 }

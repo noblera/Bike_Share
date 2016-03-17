@@ -1,8 +1,10 @@
 package com.noble.bikeshare;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
-import android.support.v7.app.AppCompatActivity;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -11,9 +13,11 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 
-public class StationActivity extends AppCompatActivity {
+public class StationActivity extends FragmentActivity {
 
     private static final String EXTRA_BIKE_TYPE = "com.noble.bikeshare.bike_type";
+    private static final int REQUEST_CODE_RETURNED = 0;
+    private static final String DIALOG_UNRESERVE = "DialogUnreserve";
 
     private Button mGenericButton;
     private Button mErrandButton;
@@ -31,7 +35,7 @@ public class StationActivity extends AppCompatActivity {
     private ArrayList<Bike> mDatabase;
 
     ArrayList<Bike> createDatabase() {
-        ArrayList<Bike> db = new ArrayList();
+        ArrayList<Bike> db = new ArrayList<>();
         for (int i=0; i<10; i++) {
             db.add(new GenericBike());
         }
@@ -43,6 +47,19 @@ public class StationActivity extends AppCompatActivity {
         }
 
         return db;
+    }
+
+    public void updateReserveStatus(boolean bikeReturned) {
+        if (bikeReturned) {
+            mBikeReserved = false;
+            if (mGenericReserve.getText().equals("Reserved")) {
+                mGenericReserve.setText("Reserve");
+            } else if (mErrandReserve.getText().equals("Reserved")) {
+                mErrandReserve.setText("Reserve");
+            } else {
+                mRoadReserve.setText("Reserve");
+            }
+        }
     }
 
     @Override
@@ -92,7 +109,7 @@ public class StationActivity extends AppCompatActivity {
                 if (mBikeReserved && mGenericReserve.getText().equals("Reserved")) {
                     // start reserve activity for generic bike
                     Intent i = ReserveActivity.newIntent(StationActivity.this, mStationLocation.getText().toString(), "Generic Bike", mReservedId);
-                    startActivity(i);
+                    startActivityForResult(i, REQUEST_CODE_RETURNED);
                 } else {
                     Toast.makeText(StationActivity.this, R.string.not_reserved_yet, Toast.LENGTH_SHORT).show();
                 }
@@ -131,6 +148,18 @@ public class StationActivity extends AppCompatActivity {
                 }
             }
         });
+        mGenericReserve.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (mBikeReserved && mGenericReserve.getText().equals("Reserved")) {
+                    FragmentManager manager = getSupportFragmentManager();
+                    UnreserveBikeFragment dialog = new UnreserveBikeFragment();
+                    dialog.show(manager, DIALOG_UNRESERVE);
+                    return true;
+                }
+                return false;
+            }
+        });
 
         mErrandButton = (Button) findViewById(R.id.errand_button);
         mErrandButton.setOnClickListener(new View.OnClickListener() {
@@ -138,7 +167,7 @@ public class StationActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (mBikeReserved && mErrandReserve.getText().equals("Reserved")) {
                     Intent i = ReserveActivity.newIntent(StationActivity.this, mStationLocation.getText().toString(), "Errand Bike", mReservedId);
-                    startActivity(i);
+                    startActivityForResult(i, REQUEST_CODE_RETURNED);
                 }
                 else {
                     Toast.makeText(StationActivity.this, R.string.not_reserved_yet, Toast.LENGTH_SHORT).show();
@@ -178,6 +207,18 @@ public class StationActivity extends AppCompatActivity {
                 }
             }
         });
+        mErrandReserve.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (mBikeReserved && mErrandReserve.getText().equals("Reserved")) {
+                    FragmentManager manager = getSupportFragmentManager();
+                    UnreserveBikeFragment dialog = new UnreserveBikeFragment();
+                    dialog.show(manager, DIALOG_UNRESERVE);
+                    return true;
+                }
+                return false;
+            }
+        });
 
         mRoadButton = (Button) findViewById(R.id.road_button);
         mRoadButton.setOnClickListener(new View.OnClickListener() {
@@ -185,7 +226,7 @@ public class StationActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (mBikeReserved && mRoadReserve.getText().equals("Reserved")) {
                     Intent i = ReserveActivity.newIntent(StationActivity.this, mStationLocation.getText().toString(), "Road Bike", mReservedId);
-                    startActivity(i);
+                    startActivityForResult(i, REQUEST_CODE_RETURNED);
                 } else {
                     Toast.makeText(StationActivity.this, R.string.not_reserved_yet, Toast.LENGTH_SHORT).show();
                 }
@@ -224,6 +265,32 @@ public class StationActivity extends AppCompatActivity {
                 }
             }
         });
+        mRoadReserve.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (mBikeReserved && mRoadReserve.getText().equals("Reserved")) {
+                    FragmentManager manager = getSupportFragmentManager();
+                    UnreserveBikeFragment dialog = new UnreserveBikeFragment();
+                    dialog.show(manager, DIALOG_UNRESERVE);
+                    return true;
+                }
+                return false;
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+        if (requestCode == REQUEST_CODE_RETURNED) {
+            if (data == null) {
+                return;
+            }
+            boolean bikeReturned = ReserveActivity.wasBikeReturned(data);
+            updateReserveStatus(bikeReturned);
+        }
     }
 
     @Override
