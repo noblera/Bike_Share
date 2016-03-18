@@ -6,28 +6,21 @@ import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 public class ReserveActivity extends AppCompatActivity {
-
     private static final String EXTRA_LOCATION = "com.noble.bikeshare.location";
     private static final String EXTRA_BIKE_TYPE = "com.noble.bikeshare.biketype";
     private static final String EXTRA_ID = "com.noble.bikeshare.id";
@@ -50,6 +43,9 @@ public class ReserveActivity extends AppCompatActivity {
     private TextView mLocationTextView;
     private TextView mBikeTypeTextView;
 
+    private BikeDatabase mDatabase;
+    private List<Bike> mBikes;
+
     private String mBikeType;
     private int mId;
     private String mLocation;
@@ -68,7 +64,8 @@ public class ReserveActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reserve);
 
-        mBikeReturned = false;
+        mDatabase = BikeDatabase.get(this);
+        mBikes = mDatabase.getBikes();
 
         mLocation = getIntent().getStringExtra(EXTRA_LOCATION);
         mLocationTextView = (TextView) findViewById(R.id.reserve_location_text_view);
@@ -77,10 +74,21 @@ public class ReserveActivity extends AppCompatActivity {
         mBikeType = getIntent().getStringExtra(EXTRA_BIKE_TYPE);
         mId = getIntent().getIntExtra(EXTRA_ID, 0);
 
+        if (mDatabase.getBike(mBikeType, mId).isAtStation()) {
+            mBikeReturned = true;
+        } else {
+            mBikeReturned = false;
+        }
+
         mBikeTypeTextView = (TextView) findViewById(R.id.bike_type_text_view);
         mBikeTypeTextView.setText(mBikeType + " " + mId);
 
         mUnlockButton = (Button) findViewById(R.id.unlock_bike_button);
+        if (mBikeReturned) {
+            mUnlockButton.setText("Unlock");
+        } else {
+            mUnlockButton.setText("Lock");
+        }
         mUnlockButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -145,6 +153,9 @@ public class ReserveActivity extends AppCompatActivity {
                                 }
                             }
                             if (unlocked) {
+                                // remove unlocked bike from list of bikes at station
+                                mBikeReturned = false;
+                                mDatabase.getBike(mBikeType, mId).setAtStation(false);
                                 Toast.makeText(ReserveActivity.this, "Bike Unlocked", Toast.LENGTH_SHORT).show();
                                 mUnlockButton.setText(R.string.lock_button);
                             }
@@ -176,6 +187,7 @@ public class ReserveActivity extends AppCompatActivity {
                             if (locked) {
                                 Toast.makeText(ReserveActivity.this, "Bike is locked", Toast.LENGTH_SHORT).show();
                                 mUnlockButton.setText(R.string.unlock_button);
+                                mDatabase.getBike(mBikeType, mId).setAtStation(true);
                                 setBikeReturnedResult(true);
                                 mBikeReturned = true;
                             }
@@ -191,6 +203,15 @@ public class ReserveActivity extends AppCompatActivity {
                 }
             }
         });
+
+        mMoreOptionsButton = (Button) findViewById(R.id.reserve_more_options_button);
+        mMoreOptionsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(ReserveActivity.this, OptionsActivity.class);
+                startActivity(i);
+            }
+        });
     }
 
     private void setBikeReturnedResult(boolean isBikeReturned) {
@@ -202,5 +223,4 @@ public class ReserveActivity extends AppCompatActivity {
     public static boolean wasBikeReturned(Intent result) {
         return result.getBooleanExtra(EXTRA_BIKE_RETURNED, false);
     }
-
 }
