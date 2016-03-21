@@ -11,7 +11,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class StationActivity extends FragmentActivity {
 
@@ -32,22 +32,8 @@ public class StationActivity extends FragmentActivity {
 
     private Boolean mBikeReserved = false;
     private int mReservedId;
-    private ArrayList<Bike> mDatabase;
-
-    ArrayList<Bike> createDatabase() {
-        ArrayList<Bike> db = new ArrayList<>();
-        for (int i=0; i<10; i++) {
-            db.add(new GenericBike());
-        }
-        for (int i=0; i<10; i++) {
-            db.add(new ErrandBike());
-        }
-        for (int i=0; i<10; i++) {
-            db.add(new RoadBike());
-        }
-
-        return db;
-    }
+    private BikeDatabase mDatabase;
+    private List<Bike> mBikes;
 
     public void updateReserveStatus(boolean bikeReturned) {
         if (bikeReturned) {
@@ -62,41 +48,63 @@ public class StationActivity extends FragmentActivity {
         }
     }
 
+    private void updateBikeStatus(boolean bikeReturned, boolean bikeUnlocked, String bikeType, int id) {
+        updateReserveStatus(bikeReturned);
+        if (bikeReturned) {
+            return;
+        }
+
+        if (!bikeUnlocked && bikeType.equals("Generic Bike")) {
+            mGenericReserve.setText("Reserved");
+            mErrandReserve.setText("Reserve");
+            mRoadReserve.setText("Reserve");
+        } else if (!bikeUnlocked && bikeType.equals("Errand Bike")) {
+            mGenericReserve.setText("Reserve");
+            mErrandReserve.setText("Reserved");
+            mRoadReserve.setText(("Reserve"));
+        } else if (!bikeUnlocked && bikeType.equals("Road Bike")) {
+            mGenericReserve.setText("Reserve");
+            mErrandReserve.setText("Reserve");
+            mRoadReserve.setText("Reserved");
+        }
+        mReservedId = id;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_station);
 
         // mock database of bikes
-        mDatabase = createDatabase();
-
+        mDatabase = BikeDatabase.get(this);
+        mBikes = mDatabase.getBikes();
 
         mStationLocation = (TextView) findViewById(R.id.location_text_view);
         mStationLocation.setText("Sadler Center");
 
         // Set up availability bars
         mGenericAvailabilityBar = findViewById(R.id.generic_availability_bar);
-        if (GenericBike.sGenericAvailable >= 6) {
+        if (mDatabase.getGenericAvailable() >= 6) {
             mGenericAvailabilityBar.setBackgroundColor(Color.GREEN);
-        } else if (GenericBike.sGenericAvailable > 0 && GenericBike.sGenericAvailable <= 5) {
+        } else if (mDatabase.getGenericAvailable() > 0 && mDatabase.getGenericAvailable() <= 5) {
             mGenericAvailabilityBar.setBackgroundColor(Color.RED);
         } else {
             mGenericAvailabilityBar.setBackgroundColor(Color.BLACK);
         }
 
         mErrandAvailabilityBar = findViewById(R.id.errand_availability_bar);
-        if (ErrandBike.sErrandAvailable >= 6) {
+        if (mDatabase.getErrandAvailable() >= 6) {
             mErrandAvailabilityBar.setBackgroundColor(Color.GREEN);
-        } else if (ErrandBike.sErrandAvailable > 0 && ErrandBike.sErrandAvailable <= 5) {
+        } else if (mDatabase.getErrandAvailable() > 0 && mDatabase.getErrandAvailable() <= 5) {
             mErrandAvailabilityBar.setBackgroundColor(Color.RED);
         } else {
             mErrandAvailabilityBar.setBackgroundColor(Color.BLACK);
         }
 
         mRoadAvailabilityBar = findViewById(R.id.road_availability_bar);
-        if (RoadBike.sRoadAvailable >= 6) {
+        if (mDatabase.getRoadAvailable() >= 6) {
             mRoadAvailabilityBar.setBackgroundColor(Color.GREEN);
-        } else if (RoadBike.sRoadAvailable > 0 && RoadBike.sRoadAvailable <= 5) {
+        } else if (mDatabase.getRoadAvailable() > 0 && mDatabase.getRoadAvailable() <= 5) {
             mRoadAvailabilityBar.setBackgroundColor(Color.RED);
         } else {
             mRoadAvailabilityBar.setBackgroundColor(Color.BLACK);
@@ -123,25 +131,24 @@ public class StationActivity extends FragmentActivity {
             public void onClick(View v) {
                 if (mBikeReserved) {
                     Toast.makeText(StationActivity.this, R.string.reserved_toast, Toast.LENGTH_SHORT).show();
-                } else if (GenericBike.sGenericAvailable == 0) {
+                } else if (mDatabase.getGenericAvailable() == 0) {
                     Toast.makeText(StationActivity.this, R.string.unavailable_toast, Toast.LENGTH_SHORT).show();
                 } else {
-                    GenericBike.sGenericAvailable = GenericBike.sGenericAvailable - 1;
+                    mDatabase.setGenericAvailable(mDatabase.getGenericAvailable()-1);
                     mGenericReserve.setText("Reserved");
                     mBikeReserved = true;
 
                     // Update availability bar color
-                    if (GenericBike.sGenericAvailable <= 5 && GenericBike.sGenericAvailable > 0) {
+                    if (mDatabase.getGenericAvailable() <= 5 && mDatabase.getGenericAvailable() > 0) {
                         mGenericAvailabilityBar.setBackgroundColor(Color.RED);
-                    } else if (GenericBike.sGenericAvailable == 0) {
+                    } else if (mDatabase.getGenericAvailable() == 0) {
                         mGenericAvailabilityBar.setBackgroundColor(Color.BLACK);
                     }
 
                     // Find a generic bike to reserve
-                    for (int i = 0; i < mDatabase.size(); i++) {
-                        if (mDatabase.get(i).getBikeType() == R.string.generic_type && !mDatabase.get(i).isReserved()) {
-                            mDatabase.get(i).setReserved(true);
-                            mReservedId = mDatabase.get(i).getId();
+                    for (int i = 0; i < mBikes.size(); i++) {
+                        if (mBikes.get(i).getBikeType().equals("Generic Bike") && mBikes.get(i).isAtStation()) {
+                            mReservedId = mBikes.get(i).getId();
                             break;
                         }
                     }
@@ -182,25 +189,24 @@ public class StationActivity extends FragmentActivity {
             public void onClick(View v) {
                 if (mBikeReserved) {
                     Toast.makeText(StationActivity.this, R.string.reserved_toast, Toast.LENGTH_SHORT).show();
-                } else if (ErrandBike.sErrandAvailable == 0) {
+                } else if (mDatabase.getErrandAvailable() == 0) {
                     Toast.makeText(StationActivity.this, R.string.unavailable_toast, Toast.LENGTH_SHORT).show();
                 } else {
-                    ErrandBike.sErrandAvailable = ErrandBike.sErrandAvailable - 1;
+                    mDatabase.setErrandAvailable(mDatabase.getErrandAvailable()-1);
                     mErrandReserve.setText("Reserved");
                     mBikeReserved = true;
 
                     // Update errand availability bar color
-                    if (ErrandBike.sErrandAvailable <= 5 && ErrandBike.sErrandAvailable > 0) {
+                    if (mDatabase.getErrandAvailable() <= 5 && mDatabase.getErrandAvailable() > 0) {
                         mErrandAvailabilityBar.setBackgroundColor(Color.RED);
-                    } else if (ErrandBike.sErrandAvailable == 0) {
+                    } else if (mDatabase.getErrandAvailable() == 0) {
                         mErrandAvailabilityBar.setBackgroundColor(Color.BLACK);
                     }
 
                     // Find an errand bike to reserve
-                    for (int i = 0; i < mDatabase.size(); i++) {
-                        if (mDatabase.get(i).getBikeType() == R.string.errand_type && !mDatabase.get(i).isReserved()) {
-                            mDatabase.get(i).setReserved(true);
-                            mReservedId = mDatabase.get(i).getId();
+                    for (int i = 0; i < mBikes.size(); i++) {
+                        if (mBikes.get(i).getBikeType().equals("Errand Bike") && mBikes.get(i).isAtStation()) {
+                            mReservedId = mBikes.get(i).getId();
                             break;
                         }
                     }
@@ -240,25 +246,24 @@ public class StationActivity extends FragmentActivity {
             public void onClick(View v) {
                 if (mBikeReserved) {
                     Toast.makeText(StationActivity.this, R.string.reserved_toast, Toast.LENGTH_SHORT).show();
-                } else if (RoadBike.sRoadAvailable == 0) {
+                } else if (mDatabase.getRoadAvailable() == 0) {
                     Toast.makeText(StationActivity.this, R.string.unavailable_toast, Toast.LENGTH_SHORT).show();
                 } else {
-                    RoadBike.sRoadAvailable = RoadBike.sRoadAvailable - 1;
+                    mDatabase.setRoadAvailable(mDatabase.getRoadAvailable()-1);
                     mRoadReserve.setText("Reserved");
                     mBikeReserved = true;
 
                     // Update road availability bar color
-                    if (RoadBike.sRoadAvailable <= 5 && RoadBike.sRoadAvailable > 0) {
+                    if (mDatabase.getRoadAvailable() <= 5 && mDatabase.getRoadAvailable() > 0) {
                         mRoadAvailabilityBar.setBackgroundColor(Color.RED);
-                    } else if (RoadBike.sRoadAvailable == 0) {
+                    } else if (mDatabase.getRoadAvailable() == 0) {
                         mRoadAvailabilityBar.setBackgroundColor(Color.BLACK);
                     }
 
                     // Find a road bike to reserve
-                    for (int i = 0; i < mDatabase.size(); i++) {
-                        if (mDatabase.get(i).getBikeType() == R.string.road_type && !mDatabase.get(i).isReserved()) {
-                            mDatabase.get(i).setReserved(true);
-                            mReservedId = mDatabase.get(i).getId();
+                    for (int i = 0; i < mBikes.size(); i++) {
+                        if (mBikes.get(i).getBikeType().equals("Road Bike") && mBikes.get(i).isAtStation()) {
+                            mReservedId = mBikes.get(i).getId();
                             break;
                         }
                     }
@@ -289,22 +294,10 @@ public class StationActivity extends FragmentActivity {
                 return;
             }
             boolean bikeReturned = ReserveActivity.wasBikeReturned(data);
-            updateReserveStatus(bikeReturned);
+            boolean bikeUnlocked = ReserveActivity.wasBikeUnlocked(data);
+            String bikeType = ReserveActivity.newBikeType(data);
+            int id = ReserveActivity.newBikeId(data);
+            updateBikeStatus(bikeReturned, bikeUnlocked, bikeType, id);
         }
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        // clean up static variables
-
-        GenericBike.sGenericQuantity = 0;
-        GenericBike.sGenericAvailable = 0;
-
-        ErrandBike.sErrandQuantity = 0;
-        ErrandBike.sErrandAvailable = 0;
-
-        RoadBike.sRoadQuantity = 0;
-        RoadBike.sRoadAvailable = 0;
     }
 }

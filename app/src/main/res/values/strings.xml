@@ -18,4 +18,6 @@
     <string name="unlock_success">Bike Unlocked</string>
     <string name="unlock_failure">Bike unlock failed</string>
     <string name="unreserve_bike_title">Unreserve Bike?</string>
+    <string name="other_bikes_button">Other Bikes</string>
+    <string name="different_bike_button">Different Bike Category</string>
 </resources>

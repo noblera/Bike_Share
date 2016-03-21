@@ -1,5 +1,6 @@
 package com.noble.bikeshare;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -25,6 +26,11 @@ public class ReserveActivity extends AppCompatActivity {
     private static final String EXTRA_BIKE_TYPE = "com.noble.bikeshare.biketype";
     private static final String EXTRA_ID = "com.noble.bikeshare.id";
     private static final String EXTRA_BIKE_RETURNED = "com.noble.bikeshare.bike_returned";
+    private static final String EXTRA_BIKE_UNLOCKED = "com.noble.bikeshare.bike_unlocked";
+    private static final String EXTRA_NEW_BIKE_TYPE = "com.noble.bikeshare.new_bike_type";
+    private static final String EXTRA_NEW_BIKE_ID = "com.noble.bikeshare.new_bike_id";
+
+    private static final int REQUEST_CODE_OPTIONS = 0;
 
     private final String MY_UUID = "c899f350-eab9-11e5-a837-0800200c9a66";
 
@@ -58,6 +64,14 @@ public class ReserveActivity extends AppCompatActivity {
     private OutputStream mOutStream;
 
     private boolean mBikeReturned;
+    private boolean mBikeUnlocked;
+
+    private void updateChosenBike(String bikeType, int id) {
+        mBikeType = bikeType;
+        mId = id;
+        mBikeTypeTextView.setText(mBikeType + " " + mId);
+        updateBikeStatus(mBikeReturned, mBikeUnlocked, mBikeType, mId);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,16 +89,17 @@ public class ReserveActivity extends AppCompatActivity {
         mId = getIntent().getIntExtra(EXTRA_ID, 0);
 
         if (mDatabase.getBike(mBikeType, mId).isAtStation()) {
-            mBikeReturned = true;
+            mBikeUnlocked = false;
         } else {
-            mBikeReturned = false;
+            mBikeUnlocked = true;
         }
+        mBikeReturned = false;
 
         mBikeTypeTextView = (TextView) findViewById(R.id.bike_type_text_view);
         mBikeTypeTextView.setText(mBikeType + " " + mId);
 
         mUnlockButton = (Button) findViewById(R.id.unlock_bike_button);
-        if (mBikeReturned) {
+        if (!mBikeUnlocked) {
             mUnlockButton.setText("Unlock");
         } else {
             mUnlockButton.setText("Lock");
@@ -154,7 +169,7 @@ public class ReserveActivity extends AppCompatActivity {
                             }
                             if (unlocked) {
                                 // remove unlocked bike from list of bikes at station
-                                mBikeReturned = false;
+                                mBikeUnlocked = true;
                                 mDatabase.getBike(mBikeType, mId).setAtStation(false);
                                 Toast.makeText(ReserveActivity.this, "Bike Unlocked", Toast.LENGTH_SHORT).show();
                                 mUnlockButton.setText(R.string.lock_button);
@@ -188,8 +203,9 @@ public class ReserveActivity extends AppCompatActivity {
                                 Toast.makeText(ReserveActivity.this, "Bike is locked", Toast.LENGTH_SHORT).show();
                                 mUnlockButton.setText(R.string.unlock_button);
                                 mDatabase.getBike(mBikeType, mId).setAtStation(true);
-                                setBikeReturnedResult(true);
+                                updateBikeStatus(true, false, mBikeType, mId);
                                 mBikeReturned = true;
+                                mBikeUnlocked = false;
                             }
                         }
                         try {
@@ -208,19 +224,49 @@ public class ReserveActivity extends AppCompatActivity {
         mMoreOptionsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(ReserveActivity.this, OptionsActivity.class);
-                startActivity(i);
+                Intent i = OptionsActivity.newIntent(ReserveActivity.this, mBikeType, mId);
+                startActivityForResult(i, REQUEST_CODE_OPTIONS);
             }
         });
     }
 
-    private void setBikeReturnedResult(boolean isBikeReturned) {
+    private void updateBikeStatus(boolean isBikeReturned, boolean isBikeUnlocked, String bikeType, int id) {
         Intent data = new Intent();
         data.putExtra(EXTRA_BIKE_RETURNED, isBikeReturned);
+        data.putExtra(EXTRA_BIKE_UNLOCKED, isBikeUnlocked);
+        data.putExtra(EXTRA_NEW_BIKE_TYPE, bikeType);
+        data.putExtra(EXTRA_NEW_BIKE_ID, id);
         setResult(RESULT_OK, data);
     }
 
     public static boolean wasBikeReturned(Intent result) {
         return result.getBooleanExtra(EXTRA_BIKE_RETURNED, false);
+    }
+
+    public static boolean wasBikeUnlocked(Intent result) {
+        return result.getBooleanExtra(EXTRA_BIKE_UNLOCKED, false);
+    }
+
+    public static String newBikeType(Intent result) {
+        return result.getStringExtra(EXTRA_NEW_BIKE_TYPE);
+    }
+
+    public static int newBikeId(Intent result) {
+        return result.getIntExtra(EXTRA_NEW_BIKE_ID, 0);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+        if (requestCode == REQUEST_CODE_OPTIONS) {
+            if (data == null) {
+                return;
+            }
+            String bikeType = OptionsActivity.newBikeType(data);
+            int id = OptionsActivity.newBikeId(data);
+            updateChosenBike(bikeType, id);
+        }
     }
 }

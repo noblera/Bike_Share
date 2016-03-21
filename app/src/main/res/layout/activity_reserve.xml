@@ -24,8 +24,7 @@
     <Button
         android:id="@+id/unlock_bike_button"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/unlock_button" />
+        android:layout_height="wrap_content" />
 
     <Button
         android:id="@+id/reserve_more_options_button"

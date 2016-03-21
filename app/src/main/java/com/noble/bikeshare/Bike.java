@@ -3,16 +3,22 @@ package com.noble.bikeshare;
 /**
  * Created by richie on 3/9/16.
  */
-public abstract class Bike {
-    private int mBikeType;
+public class Bike {
+    private String mBikeType;
     private int mId;
-    private boolean mReserved;
+    private boolean mAtStation;
 
-    public int getBikeType() {
+    public Bike(String bikeType, int id) {
+        mBikeType = bikeType;
+        mId = id;
+        mAtStation = true;
+    }
+
+    public String getBikeType() {
         return mBikeType;
     }
 
-    public void setBikeType(int bikeType) {
+    public void setBikeType(String bikeType) {
         mBikeType = bikeType;
     }
 
@@ -24,11 +30,11 @@ public abstract class Bike {
         mId = id;
     }
 
-    public boolean isReserved() {
-        return mReserved;
+    public boolean isAtStation() {
+        return mAtStation;
     }
 
-    public void setReserved(boolean value) {
-        mReserved = value;
+    public void setAtStation(boolean value) {
+        mAtStation = value;
     }
 }
