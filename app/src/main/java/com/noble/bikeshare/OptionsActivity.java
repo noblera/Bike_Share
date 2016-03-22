@@ -7,11 +7,13 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 public class OptionsActivity extends AppCompatActivity {
 
     private static final String EXTRA_BIKE_TYPE = "com.noble.bikeshare.bike_type";
     private static final String EXTRA_BIKE_ID = "com.noble.bikeshare.id";
+    private static final String EXTRA_BIKE_UNLOCKED = "com.noble.bikeshare.bike_unlocked";
     private static final String EXTRA_NEW_BIKE_TYPE = "com.noble.bikeshare.new_bike_type";
     private static final String EXTRA_NEW_BIKE_ID = "com.noble.bikeshare.new_bike_id";
 
@@ -23,11 +25,13 @@ public class OptionsActivity extends AppCompatActivity {
 
     private String mBikeType;
     private int mId;
+    private boolean mBikeUnlocked;
 
-    public static Intent newIntent(Context packageContext, String bikeType, int id) {
+    public static Intent newIntent(Context packageContext, String bikeType, int id, boolean bikeUnlocked) {
         Intent i = new Intent(packageContext, OptionsActivity.class);
         i.putExtra(EXTRA_BIKE_TYPE, bikeType);
         i.putExtra(EXTRA_BIKE_ID, id);
+        i.putExtra(EXTRA_BIKE_UNLOCKED, bikeUnlocked);
 
         return i;
     }
@@ -47,13 +51,18 @@ public class OptionsActivity extends AppCompatActivity {
 
         mBikeType = getIntent().getStringExtra(EXTRA_BIKE_TYPE);
         mId = getIntent().getIntExtra(EXTRA_BIKE_ID, 0);
+        mBikeUnlocked = getIntent().getBooleanExtra(EXTRA_BIKE_UNLOCKED, false);
 
         mOtherBikesButton = (Button) findViewById(R.id.other_bikes_button);
         mOtherBikesButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = OtherBikesActivity.newIntent(OptionsActivity.this, mBikeType);
-                startActivityForResult(i, REQUEST_CODE_OTHER_BIKES);
+                if (!mBikeUnlocked) {
+                    Intent i = OtherBikesActivity.newIntent(OptionsActivity.this, mBikeType);
+                    startActivityForResult(i, REQUEST_CODE_OTHER_BIKES);
+                } else {
+                    Toast.makeText(OptionsActivity.this, "Bike already unlocked", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -62,8 +71,12 @@ public class OptionsActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // start different bike category activity
-                Intent i = DifferentBikeActivity.newIntent(OptionsActivity.this, mBikeType);
-                startActivityForResult(i, REQUEST_CODE_DIFFERENT_BIKE);
+                if (!mBikeUnlocked) {
+                    Intent i = DifferentBikeActivity.newIntent(OptionsActivity.this, mBikeType);
+                    startActivityForResult(i, REQUEST_CODE_DIFFERENT_BIKE);
+                } else {
+                    Toast.makeText(OptionsActivity.this, "Bike already unlocked", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }

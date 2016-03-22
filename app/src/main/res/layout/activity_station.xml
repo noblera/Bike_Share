@@ -13,22 +13,35 @@
         android:padding="24dp"
         tools:text="Bike Station Location" />
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_weight="1" >
 
-        <Button
+        <TextView
+            android:id="@+id/generic_descriptor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/generic_type"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"/>
+
+        <ImageButton
             android:id="@+id/generic_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/generic_button" />
+            android:src="@drawable/generic_bike"
+            android:layout_below="@id/generic_descriptor" />
 
         <View
             android:id="@+id/generic_availability_bar"
             android:layout_width="48dp"
-            android:layout_height="24dp" >
+            android:layout_height="24dp"
+            android:layout_centerVertical="true"
+            android:layout_toRightOf="@+id/generic_button"
+            android:layout_toEndOf="@+id/generic_button">
 
         </View>
 
@@ -36,26 +49,39 @@
             android:id="@+id/generic_reserve_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            tools:text="Reserve" />
+            tools:text="Reserve"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"/>
 
-    </LinearLayout>
+    </RelativeLayout>
 
-    <LinearLayout
+
+
+    <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_weight="1" >
 
-        <Button
+        <TextView
+            android:id="@+id/errand_descriptor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/errand_type" />
+
+        <ImageButton
             android:id="@+id/errand_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/errand_button" />
+            android:src="@drawable/errand_bike"
+            android:layout_below="@id/errand_descriptor" />
 
         <View
             android:id="@+id/errand_availability_bar"
             android:layout_width="48dp"
-            android:layout_height="24dp" >
+            android:layout_height="24dp"
+            android:layout_toRightOf="@id/errand_button" >
 
         </View>
 
@@ -63,9 +89,13 @@
             android:id="@+id/errand_reserve_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            tools:text="Reserve" />
+            tools:text="Reserve"
+            android:layout_gravity="right"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"/>
 
-    </LinearLayout>
+    </RelativeLayout>
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -73,11 +103,11 @@
         android:orientation="horizontal"
         android:layout_weight="1" >
 
-        <Button
+        <ImageButton
             android:id="@+id/road_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/road_button" />
+            android:src="@drawable/road_bike" />
 
         <View
             android:id="@+id/road_availability_bar"

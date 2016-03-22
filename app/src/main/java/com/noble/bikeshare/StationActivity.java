@@ -8,6 +8,7 @@ import android.support.v4.app.FragmentManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,9 +20,9 @@ public class StationActivity extends FragmentActivity {
     private static final int REQUEST_CODE_RETURNED = 0;
     private static final String DIALOG_UNRESERVE = "DialogUnreserve";
 
-    private Button mGenericButton;
-    private Button mErrandButton;
-    private Button mRoadButton;
+    private ImageButton mGenericButton;
+    private ImageButton mErrandButton;
+    private ImageButton mRoadButton;
     private Button mGenericReserve;
     private Button mErrandReserve;
     private Button mRoadReserve;
@@ -110,7 +111,7 @@ public class StationActivity extends FragmentActivity {
             mRoadAvailabilityBar.setBackgroundColor(Color.BLACK);
         }
 
-        mGenericButton = (Button) findViewById(R.id.generic_button);
+        mGenericButton = (ImageButton) findViewById(R.id.generic_button);
         mGenericButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -168,7 +169,7 @@ public class StationActivity extends FragmentActivity {
             }
         });
 
-        mErrandButton = (Button) findViewById(R.id.errand_button);
+        mErrandButton = (ImageButton) findViewById(R.id.errand_button);
         mErrandButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -226,7 +227,7 @@ public class StationActivity extends FragmentActivity {
             }
         });
 
-        mRoadButton = (Button) findViewById(R.id.road_button);
+        mRoadButton = (ImageButton) findViewById(R.id.road_button);
         mRoadButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

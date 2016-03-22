@@ -3,7 +3,7 @@
     <string name="generic_button">Generic</string>
     <string name="errand_button">Errand</string>
     <string name="road_button">Road</string>
-    <string name="reserved_toast">Already Reserved Bike</string>
+    <string name="reserved_toast">Already Reserved Bike, Long Click to Unreserve</string>
     <string name="unavailable_toast">No Available Bikes</string>
     <string name="not_reserved_yet">Bike Not Reserved Yet</string>
     <string name="title_activity_reserve">Unlock Bike</string>

@@ -224,7 +224,7 @@ public class ReserveActivity extends AppCompatActivity {
         mMoreOptionsButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = OptionsActivity.newIntent(ReserveActivity.this, mBikeType, mId);
+                Intent i = OptionsActivity.newIntent(ReserveActivity.this, mBikeType, mId, mBikeUnlocked);
                 startActivityForResult(i, REQUEST_CODE_OPTIONS);
             }
         });
