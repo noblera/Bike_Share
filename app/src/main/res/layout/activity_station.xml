@@ -81,7 +81,9 @@
             android:id="@+id/errand_availability_bar"
             android:layout_width="48dp"
             android:layout_height="24dp"
-            android:layout_toRightOf="@id/errand_button" >
+            android:layout_centerVertical="true"
+            android:layout_toRightOf="@+id/errand_button"
+            android:layout_toEndOf="@+id/errand_button">
 
         </View>
 
@@ -91,28 +93,38 @@
             android:layout_height="wrap_content"
             tools:text="Reserve"
             android:layout_gravity="right"
-            android:layout_alignParentTop="true"
+            android:layout_centerVertical="true"
             android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"/>
 
     </RelativeLayout>
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_weight="1" >
 
+        <TextView
+            android:id="@+id/road_descriptor"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/road_type" />
+
         <ImageButton
             android:id="@+id/road_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/road_bike" />
+            android:src="@drawable/road_bike"
+            android:layout_below="@id/road_descriptor" />
 
         <View
             android:id="@+id/road_availability_bar"
             android:layout_width="48dp"
-            android:layout_height="24dp" >
+            android:layout_height="24dp"
+            android:layout_centerVertical="true"
+            android:layout_toRightOf="@+id/road_button"
+            android:layout_toEndOf="@+id/road_button">
 
         </View>
 
@@ -120,8 +132,11 @@
             android:id="@+id/road_reserve_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            tools:text="Reserve"/>
+            tools:text="Reserve"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"/>
 
-    </LinearLayout>
+    </RelativeLayout>
 
 </LinearLayout>
