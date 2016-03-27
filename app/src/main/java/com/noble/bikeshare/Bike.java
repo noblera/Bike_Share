@@ -4,6 +4,7 @@ package com.noble.bikeshare;
  * Created by richie on 3/9/16.
  */
 public class Bike {
+
     private String mBikeType;
     private int mId;
     private boolean mAtStation;
