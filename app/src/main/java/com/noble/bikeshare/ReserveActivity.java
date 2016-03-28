@@ -4,14 +4,26 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.extensions.android.json.AndroidJsonFactory;
+import com.noble.backend.errandBikeApi.ErrandBikeApi;
+import com.noble.backend.errandBikeApi.model.ErrandBike;
+import com.noble.backend.genericBikeApi.GenericBikeApi;
+import com.noble.backend.genericBikeApi.model.GenericBike;
+import com.noble.backend.roadBikeApi.RoadBikeApi;
+import com.noble.backend.roadBikeApi.model.RoadBike;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,6 +55,10 @@ public class ReserveActivity extends AppCompatActivity {
         return i;
     }
 
+    private static GenericBikeApi sGenericBikeService = null;
+    private static ErrandBikeApi sErrandBikeService = null;
+    private static RoadBikeApi sRoadBikeService = null;
+
     private Button mUnlockButton;
     private Button mMoreOptionsButton;
 
@@ -50,7 +66,9 @@ public class ReserveActivity extends AppCompatActivity {
     private TextView mBikeTypeTextView;
 
     private BikeDatabase mDatabase;
-    private List<Bike> mBikes;
+    private List<GenericBike> mGenericBikes;
+    private List<ErrandBike> mErrandBikes;
+    private List<RoadBike> mRoadBikes;
 
     private String mBikeType;
     private int mId;
@@ -66,6 +84,31 @@ public class ReserveActivity extends AppCompatActivity {
     private boolean mBikeReturned;
     private boolean mBikeUnlocked;
 
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                if(device.getName().equals("Nexus 4")) { // normally pull bike lock name from backend
+                    mDevice = device;
+                }
+            }
+        }
+    };
+
+    public void setGenericBikes() {
+        mGenericBikes = mDatabase.getGenericBikes();
+    }
+
+    public void setErrandBikes() {
+        mErrandBikes = mDatabase.getErrandBikes();
+    }
+
+    public void setRoadBikes() {
+        mRoadBikes = mDatabase.getRoadBikes();
+    }
+
     private void updateChosenBike(String bikeType, int id) {
         mBikeType = bikeType;
         mId = id;
@@ -79,7 +122,15 @@ public class ReserveActivity extends AppCompatActivity {
         setContentView(R.layout.activity_reserve);
 
         mDatabase = BikeDatabase.get(this);
-        mBikes = mDatabase.getBikes();
+        if (mGenericBikes == null) {
+            setGenericBikes();
+        }
+        if (mErrandBikes == null) {
+            setErrandBikes();
+        }
+        if (mRoadBikes == null) {
+            setRoadBikes();
+        }
 
         mLocation = getIntent().getStringExtra(EXTRA_LOCATION);
         mLocationTextView = (TextView) findViewById(R.id.reserve_location_text_view);
@@ -88,10 +139,24 @@ public class ReserveActivity extends AppCompatActivity {
         mBikeType = getIntent().getStringExtra(EXTRA_BIKE_TYPE);
         mId = getIntent().getIntExtra(EXTRA_ID, 0);
 
-        if (mDatabase.getBike(mBikeType, mId).isAtStation()) {
-            mBikeUnlocked = false;
+        if (mBikeType.equals("Generic Bike")) {
+            if (mDatabase.getGenericBike(mId).getAtStation()) {
+                mBikeUnlocked = false;
+            } else {
+                mBikeUnlocked = true;
+            }
+        } else if (mBikeType.equals("Errand Bike")) {
+            if (mDatabase.getErrandBike(mId).getAtStation()) {
+                mBikeUnlocked = false;
+            } else {
+                mBikeUnlocked = true;
+            }
         } else {
-            mBikeUnlocked = true;
+            if (mDatabase.getRoadBike(mId).getAtStation()) {
+                mBikeUnlocked = false;
+            } else {
+                mBikeUnlocked = true;
+            }
         }
         mBikeReturned = false;
 
@@ -104,10 +169,11 @@ public class ReserveActivity extends AppCompatActivity {
         } else {
             mUnlockButton.setText("Lock");
         }
+
         mUnlockButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // start unlock process
+                // start communication process with bike lock
                 mBA = BluetoothAdapter.getDefaultAdapter();
                 if (mBA == null) {
                     Toast.makeText(ReserveActivity.this, R.string.bluetooth_not_supported, Toast.LENGTH_SHORT).show();
@@ -117,103 +183,150 @@ public class ReserveActivity extends AppCompatActivity {
                         Intent turnOn = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                         startActivityForResult(turnOn, 0);
                     } else {
-                        Set<BluetoothDevice> pairedDevices = mBA.getBondedDevices();
-                        if (pairedDevices.size() > 0) {
-                            for (BluetoothDevice device : pairedDevices) {
-                                if (device.getName().equals("Nexus 4")) {
-                                    mDevice = device;
-                                    break;
+                        // check if we're already paired with bike lock
+                        if (mDevice == null) {
+                            Set<BluetoothDevice> pairedDevices = mBA.getBondedDevices();
+                            if (pairedDevices.size() > 0) {
+                                for (BluetoothDevice device : pairedDevices) {
+                                    if (device != null && device.getName().equals("Nexus 4")) {
+                                        mDevice = device;
+                                        break;
+                                    }
                                 }
                             }
                         }
-                        // set up connection to lock
-                        try {
-                            mSocket = mDevice.createRfcommSocketToServiceRecord(UUID.fromString(MY_UUID));
-                        } catch (IOException e) { }
+                        if (mDevice == null) {
+                            // not paired, need to discover it
+                            if (mBA.isDiscovering()) { // cancel old discovery attempts
+                                mBA.cancelDiscovery();
+                            }
+                            //Toast.makeText(ReserveActivity.this, "Before discovery", Toast.LENGTH_SHORT).show();
+                            if(!mBA.startDiscovery()) {
+                            // start a fresh one
+                                Toast.makeText(ReserveActivity.this, "false...", Toast.LENGTH_SHORT);
+                            }
+                            //Toast.makeText(ReserveActivity.this, "After discovery", Toast.LENGTH_SHORT).show();
 
-                        try {
-                            mSocket.connect();
-                        } catch (IOException connectException) {
+                            // register a broadcast receiver for discovered devices
+                            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+                            registerReceiver(mReceiver, filter);
+                            while (mBA.isDiscovering()) {
+                                continue;
+                            }
+                        }
+                        if (mDevice != null) {
+
+                            // set up connection to lock
+                            try {
+                                mSocket = mDevice.createRfcommSocketToServiceRecord(UUID.fromString(MY_UUID));
+                            } catch (IOException e) { }
+                            if (mBA.isDiscovering()) {
+                                mBA.cancelDiscovery();
+                            }
+                            try {
+                                mSocket.connect();
+                            } catch (IOException connectException) {
+                                try {
+                                    mSocket.close();
+                                } catch (IOException closeException) { }
+                            }
+                            // connected, attempt to send password for verification
+                            try {
+                                mInStream = mSocket.getInputStream();
+                                mOutStream = mSocket.getOutputStream();
+                            } catch (IOException e) { }
+
+                            if (mUnlockButton.getText().toString().equals("Unlock")) {
+                                String tmp_pass = "test";
+                                byte[] byte_pass = tmp_pass.getBytes();
+                                try {
+                                    mOutStream.write(byte_pass);
+                                } catch (IOException e) { }
+                                // sent password, wait for confirmation
+                                byte[] buffer = new byte[1024];
+                                int bytes; // number of bytes returned
+                                try {
+                                    bytes = mInStream.read(buffer);
+                                } catch (IOException e) { }
+                                String s = new String(buffer, Charset.forName("UTF-8"));
+                                String answerYes = "y";
+                                boolean unlocked = true;
+                                byte[] byteYes = answerYes.getBytes();
+                                for (int i = 0; i < byteYes.length; i++) {
+                                    if (byteYes[i] != buffer[i]) {
+                                        Toast.makeText(ReserveActivity.this, "Failed to unlock bike", Toast.LENGTH_SHORT).show();
+                                        unlocked = false;
+                                        break;
+                                    }
+                                }
+                                if (unlocked) {
+                                    // remove unlocked bike from list of bikes at station
+                                    mBikeUnlocked = true;
+                                    if (mBikeType.equals("Generic Bike")) {
+                                        GenericBike bike = mDatabase.getGenericBike(mId).setAtStation(false);
+                                        new UpdateGenericBikeAsyncTask().execute(bike);
+                                    } else if (mBikeType.equals("Errand Bike")) {
+                                        ErrandBike bike = mDatabase.getErrandBike(mId).setAtStation(false);
+                                        new UpdateErrandBikeAsyncTask().execute(bike);
+                                    } else {
+                                        RoadBike bike = mDatabase.getRoadBike(mId).setAtStation(false);
+                                        new UpdateRoadBikeAsyncTask().execute(bike);
+                                    }
+                                    Toast.makeText(ReserveActivity.this, "Bike Unlocked", Toast.LENGTH_SHORT).show();
+                                    mUnlockButton.setText(R.string.lock_button);
+                                }
+                            } else {
+                                // checking if bike is properly "locked" again
+                                String query = "q";
+                                byte[] queryByte = query.getBytes();
+
+                                try {
+                                    mOutStream.write(queryByte);
+                                } catch (IOException e) { }
+
+                                byte[] buffer = new byte[1024];
+                                int bytes;
+                                try {
+                                    bytes = mInStream.read(buffer);
+                                } catch (IOException e) { }
+
+                                String queryYes = "y";
+                                byte[] queryYesByte = queryYes.getBytes();
+                                boolean locked = true;
+                                for (int i = 0; i < queryYesByte.length; i++) {
+                                    if (queryYesByte[i] != buffer[i]) {
+                                        Toast.makeText(ReserveActivity.this, "Bike is not locked", Toast.LENGTH_SHORT).show();
+                                        locked = false;
+                                        break;
+                                    }
+                                }
+                                if (locked) {
+                                    Toast.makeText(ReserveActivity.this, "Bike is locked", Toast.LENGTH_SHORT).show();
+                                    mUnlockButton.setText(R.string.unlock_button);
+                                    if (mBikeType.equals("Generic Bike")) {
+                                        GenericBike bike = mDatabase.getGenericBike(mId).setAtStation(true);
+                                        new UpdateGenericBikeAsyncTask().execute(bike);
+                                    } else if (mBikeType.equals("Errand Bike")) {
+                                        ErrandBike bike = mDatabase.getErrandBike(mId).setAtStation(true);
+                                        new UpdateErrandBikeAsyncTask().execute(bike);
+                                    } else {
+                                        RoadBike bike = mDatabase.getRoadBike(mId).setAtStation(true);
+                                        new UpdateRoadBikeAsyncTask().execute(bike);
+                                    }
+                                    updateBikeStatus(true, false, mBikeType, mId);
+                                    mBikeReturned = true;
+                                    mBikeUnlocked = false;
+                                }
+                            }
                             try {
                                 mSocket.close();
-                            } catch (IOException closeException) { }
-                        }
-                        // connected, attempt to send password for verification
-                        try {
-                            mInStream = mSocket.getInputStream();
-                            mOutStream = mSocket.getOutputStream();
-                        } catch (IOException e) { }
+                            } catch (IOException e) { }
 
-                        if (mUnlockButton.getText().toString().equals("Unlock")) {
-                            String tmp_pass = "test";
-                            byte[] byte_pass = tmp_pass.getBytes();
-                            try {
-                                mOutStream.write(byte_pass);
-                            } catch (IOException e) { }
-                            // sent password, wait for confirmation
-                            byte[] buffer = new byte[1024];
-                            int bytes; // number of bytes returned
-                            try {
-                                bytes = mInStream.read(buffer);
-                            } catch (IOException e) { }
-                            String s = new String(buffer, Charset.forName("UTF-8"));
-                            String answerYes = "y";
-                            boolean unlocked = true;
-                            byte[] byteYes = answerYes.getBytes();
-                            for (int i = 0; i < byteYes.length; i++) {
-                                if (byteYes[i] != buffer[i]) {
-                                    Toast.makeText(ReserveActivity.this, "Failed to unlock bike", Toast.LENGTH_SHORT).show();
-                                    unlocked = false;
-                                    break;
-                                }
-                            }
-                            if (unlocked) {
-                                // remove unlocked bike from list of bikes at station
-                                mBikeUnlocked = true;
-                                mDatabase.getBike(mBikeType, mId).setAtStation(false);
-                                Toast.makeText(ReserveActivity.this, "Bike Unlocked", Toast.LENGTH_SHORT).show();
-                                mUnlockButton.setText(R.string.lock_button);
+                            if (mBikeReturned) {
+                                finish();
                             }
                         } else {
-                            // checking if bike is properly "locked" again
-                            String query = "q";
-                            byte[] queryByte = query.getBytes();
-
-                            try {
-                                mOutStream.write(queryByte);
-                            } catch (IOException e) { }
-
-                            byte[] buffer = new byte[1024];
-                            int bytes;
-                            try {
-                                bytes = mInStream.read(buffer);
-                            } catch (IOException e) { }
-
-                            String queryYes = "y";
-                            byte[] queryYesByte = queryYes.getBytes();
-                            boolean locked = true;
-                            for (int i=0; i<queryYesByte.length; i++) {
-                                if (queryYesByte[i] != buffer[i]) {
-                                    Toast.makeText(ReserveActivity.this, "Bike is not locked", Toast.LENGTH_SHORT).show();
-                                    locked = false;
-                                    break;
-                                }
-                            }
-                            if (locked) {
-                                Toast.makeText(ReserveActivity.this, "Bike is locked", Toast.LENGTH_SHORT).show();
-                                mUnlockButton.setText(R.string.unlock_button);
-                                mDatabase.getBike(mBikeType, mId).setAtStation(true);
-                                updateBikeStatus(true, false, mBikeType, mId);
-                                mBikeReturned = true;
-                                mBikeUnlocked = false;
-                            }
-                        }
-                        try {
-                            mSocket.close();
-                        } catch (IOException e) { }
-
-                        if (mBikeReturned) {
-                            finish();
+                            Toast.makeText(ReserveActivity.this, "Bike lock not found", Toast.LENGTH_SHORT).show();
                         }
                     }
                 }
@@ -268,5 +381,72 @@ public class ReserveActivity extends AppCompatActivity {
             int id = OptionsActivity.newBikeId(data);
             updateChosenBike(bikeType, id);
         }
+    }
+
+    private class UpdateGenericBikeAsyncTask extends AsyncTask<GenericBike, Void, Void> {
+        @Override
+        protected Void doInBackground(GenericBike... params) {
+            if (sGenericBikeService == null) {
+                GenericBikeApi.Builder builder = new GenericBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
+                sGenericBikeService = builder.build();
+            }
+            try {
+                GenericBike bike = params[0];
+                Long id = bike.getId();
+                sGenericBikeService.update(id, bike).execute();
+            } catch (IOException e) { }
+            return null;
+        }
+    }
+
+    private class UpdateErrandBikeAsyncTask extends AsyncTask<ErrandBike, Void, Void> {
+        @Override
+        protected Void doInBackground(ErrandBike... params) {
+            if (sErrandBikeService == null) {
+                ErrandBikeApi.Builder builder = new ErrandBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
+                sErrandBikeService = builder.build();
+            }
+            try {
+                ErrandBike bike = params[0];
+                Long id = bike.getId();
+                sErrandBikeService.update(id, bike).execute();
+            } catch (IOException e) { }
+            return null;
+        }
+    }
+
+    private class UpdateRoadBikeAsyncTask extends AsyncTask<RoadBike, Void, Void> {
+        @Override
+        protected Void doInBackground(RoadBike... params) {
+            if (sRoadBikeService == null) {
+                RoadBikeApi.Builder builder = new RoadBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
+                sRoadBikeService = builder.build();
+            }
+            try {
+                RoadBike bike = params[0];
+                Long id = bike.getId();
+                sRoadBikeService.update(id, bike).execute();
+            } catch (IOException e) { }
+            return null;
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        // do some cleanup
+        if (mBA != null && mBA.isDiscovering()) {
+            mBA.cancelDiscovery();
+        }
+        try {
+            unregisterReceiver(mReceiver);
+        } catch (IllegalArgumentException e) { }
     }
 }
