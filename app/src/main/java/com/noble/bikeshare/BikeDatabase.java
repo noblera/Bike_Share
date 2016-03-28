@@ -2,13 +2,15 @@ package com.noble.bikeshare;
 
 import android.content.Context;
 import android.os.AsyncTask;
-import android.util.Log;
-import android.widget.Toast;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.extensions.android.json.AndroidJsonFactory;
+import com.noble.backend.errandBikeApi.ErrandBikeApi;
+import com.noble.backend.errandBikeApi.model.ErrandBike;
 import com.noble.backend.genericBikeApi.GenericBikeApi;
 import com.noble.backend.genericBikeApi.model.GenericBike;
+import com.noble.backend.roadBikeApi.RoadBikeApi;
+import com.noble.backend.roadBikeApi.model.RoadBike;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,6 +22,10 @@ import java.util.List;
 public class BikeDatabase {
     private static BikeDatabase sBikeDatabase;
 
+    private static GenericBikeApi sGenericBikeService = null;
+    private static ErrandBikeApi sErrandBikeService = null;
+    private static RoadBikeApi sRoadBikeService = null;
+
     private int mGenericQuantity;
     private int mGenericAvailable;
 
@@ -29,7 +35,6 @@ public class BikeDatabase {
     private int mRoadQuantity;
     private int mRoadAvailable;
 
-    private List<Bike> mBikes;
     private List<com.noble.backend.genericBikeApi.model.GenericBike> mGenericBikes;
     private List<com.noble.backend.errandBikeApi.model.ErrandBike> mErrandBikes;
     private List<com.noble.backend.roadBikeApi.model.RoadBike> mRoadBikes;
@@ -43,74 +48,50 @@ public class BikeDatabase {
 
     private BikeDatabase(Context context) {
 
-        mBikes = new ArrayList<>();
-        new GetGenericBikesAsyncTask().execute();
-        if (mGenericBikes == null) { // we need to preload the database still
-            Toast.makeText(context, "got here", Toast.LENGTH_SHORT).show();
-            for (int i=0; i<10; i++) {
-                GenericBike bike = new GenericBike();
-                bike.setId(new Long(i+1));
-                new AddGenericBikeAsyncTask().execute(bike);
-            }
-        }
-        mGenericQuantity = 0;
-        mGenericAvailable = 0;
+        new GetGenericBikesAsyncTask(context).execute();
 
-        mErrandBikes = new ArrayList<>();
-        mErrandQuantity = 0;
-        mErrandAvailable = 0;
+        new GetErrandBikesAsyncTask(context).execute();
 
-        mRoadBikes = new ArrayList<>();
-        mRoadQuantity = 0;
-        mRoadAvailable = 0;
-
-        for (int i=0; i<10; i++) {
-            mGenericQuantity++;
-            mBikes.add(new Bike("Generic Bike", mGenericQuantity));
-        }
-        mGenericAvailable = mGenericQuantity;
-        for (int i=0; i<10; i++) {
-            mErrandQuantity++;
-            mBikes.add(new Bike("Errand Bike", mErrandQuantity));
-        }
-        mErrandAvailable = mErrandQuantity;
-        for (int i=0; i<10; i++) {
-            mRoadQuantity++;
-            mBikes.add(new Bike("Road Bike", mRoadQuantity));
-        }
-        mRoadAvailable = mRoadQuantity;
+        new GetRoadBikesAsyncTask(context).execute();
     }
 
-    public List<Bike> getBikes() {
-        return mBikes;
+    public List<GenericBike> getGenericBikes() {
+        return mGenericBikes;
     }
 
-    public Bike getBike(String bikeType, int id) {
-        for (Bike bike : mBikes) {
-            if (bike.getBikeType().equals(bikeType) && bike.getId() == id) {
+    public List<ErrandBike> getErrandBikes() {
+        return mErrandBikes;
+    }
+
+    public List<RoadBike> getRoadBikes() {
+        return mRoadBikes;
+    }
+
+    public GenericBike getGenericBike(int id) {
+        for (GenericBike bike : mGenericBikes) {
+            if (bike.getId().equals(new Long(id))) {
                 return bike;
             }
         }
         return null;
     }
 
-    public void addBike(String bikeType) {
-        int id;
-        if (bikeType.equals("Generic Bike")) {
-            mGenericQuantity++;
-            id = mGenericQuantity;
-            mGenericAvailable++;
-        } else if (bikeType.equals("Errand Bike")) {
-            mErrandQuantity++;
-            id = mErrandQuantity;
-            mErrandAvailable++;
-        } else {
-            mRoadQuantity++;
-            id = mRoadQuantity;
-            mRoadAvailable++;
+    public ErrandBike getErrandBike(int id) {
+        for (ErrandBike bike : mErrandBikes) {
+            if (bike.getId().equals(new Long(id))) {
+                return bike;
+            }
         }
-        Bike bike = new Bike(bikeType, id);
-        mBikes.add(bike);
+        return null;
+    }
+
+    public RoadBike getRoadBike(int id) {
+        for (RoadBike bike : mRoadBikes) {
+            if (bike.getId().equals(new Long(id))) {
+                return bike;
+            }
+        }
+        return null;
     }
 
     public int getGenericQuantity() {
@@ -162,35 +143,222 @@ public class BikeDatabase {
     }
 
     private class GetGenericBikesAsyncTask extends AsyncTask<Void, Void, List<com.noble.backend.genericBikeApi.model.GenericBike> > {
+        Context context;
+
+        public GetGenericBikesAsyncTask(Context context) {
+            this.context = context;
+        }
         @Override
         protected List<com.noble.backend.genericBikeApi.model.GenericBike> doInBackground(Void... params) {
-            GenericBikeApi.Builder builder = new GenericBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
-                    new AndroidJsonFactory(), null)
-                    .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
-            GenericBikeApi service = builder.build();
+            if (sGenericBikeService == null) {
+                GenericBikeApi.Builder builder = new GenericBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
+                sGenericBikeService = builder.build();
+            }
             try {
-                return service.list().execute().getItems();
+                return sGenericBikeService.list().execute().getItems();
             } catch (IOException e) { }
             return null;
         }
         @Override
         protected void onPostExecute(List<com.noble.backend.genericBikeApi.model.GenericBike> resultList) {
-            mGenericBikes = resultList;
+            mGenericBikes = new ArrayList<>(resultList);
+            mGenericQuantity = mGenericBikes.size();
+            int count = 0;
+            for (GenericBike bike : mGenericBikes) {
+                if (bike.getAtStation()) {
+                    count++;
+                }
+            }
+            mGenericAvailable = count;
+
+            if (context.getClass().getSimpleName().equals("StationActivity")) {
+                StationActivity activity = (StationActivity) context;
+
+                // update StationActivity's Availability views
+                activity.updateGenericAvailability(mGenericAvailable);
+
+                //update StationActivity's bike lists
+                activity.setGenericBikes();
+            }
+
+            if (context.getClass().getSimpleName().equals("ReserveActivity")) {
+                ReserveActivity activity = (ReserveActivity) context;
+
+                //update ReserveActivity's bike lists
+                activity.setGenericBikes();
+            }
+
+            if (context.getClass().getSimpleName().equals("OtherBikesActivity")) {
+                OtherBikesActivity activity = (OtherBikesActivity) context;
+
+                // update OtherBikesActivity's bike lists
+                //activity.setGenericBikes();
+            }
+        }
+    }
+
+    private class GetErrandBikesAsyncTask extends AsyncTask<Void, Void, List<com.noble.backend.errandBikeApi.model.ErrandBike> > {
+        Context context;
+
+        public GetErrandBikesAsyncTask(Context context) {
+            this.context = context;
+        }
+        @Override
+        protected List<com.noble.backend.errandBikeApi.model.ErrandBike> doInBackground(Void... params) {
+            if (sErrandBikeService == null) {
+                ErrandBikeApi.Builder builder = new ErrandBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
+                sErrandBikeService = builder.build();
+            }
+            try {
+                return sErrandBikeService.list().execute().getItems();
+            } catch (IOException e) { }
+            return null;
+        }
+        @Override
+        protected void onPostExecute(List<com.noble.backend.errandBikeApi.model.ErrandBike> resultList) {
+            mErrandBikes = new ArrayList<>(resultList);
+            mErrandQuantity = mErrandBikes.size();
+            int count = 0;
+            for (ErrandBike bike : mErrandBikes) {
+                if (bike.getAtStation()) {
+                    count++;
+                }
+            }
+            mErrandAvailable = count;
+
+            if (context.getClass().getSimpleName().equals("StationActivity")) {
+                StationActivity activity = (StationActivity) context;
+
+                // update StationActivity's Availability views
+                activity.updateErrandAvailability(mErrandAvailable);
+
+                // update StationActivity's bike lists
+                activity.setErrandBikes();
+            }
+
+            if (context.getClass().getSimpleName().equals("ReserveActivity")) {
+                ReserveActivity activity = (ReserveActivity) context;
+
+                // update ReserveActivity's bike lists
+                activity.setErrandBikes();
+            }
+
+            if (context.getClass().getSimpleName().equals("OtherBikesActivity")) {
+                OtherBikesActivity activity = (OtherBikesActivity) context;
+
+                // update OtherBikesActivity's bike lists
+                //activity.setErrandBikes();
+            }
+        }
+    }
+
+    private class GetRoadBikesAsyncTask extends AsyncTask<Void, Void, List<com.noble.backend.roadBikeApi.model.RoadBike> > {
+        Context context;
+
+        public GetRoadBikesAsyncTask(Context context) {
+            this.context = context;
+        }
+        @Override
+        protected List<com.noble.backend.roadBikeApi.model.RoadBike> doInBackground(Void... params) {
+            if (sRoadBikeService == null) {
+                RoadBikeApi.Builder builder = new RoadBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
+                sRoadBikeService = builder.build();
+            }
+            try {
+                return sRoadBikeService.list().execute().getItems();
+            } catch (IOException e) { }
+            return null;
+        }
+        @Override
+        protected void onPostExecute(List<com.noble.backend.roadBikeApi.model.RoadBike> resultList) {
+            mRoadBikes = new ArrayList<>(resultList);
+            mRoadQuantity = mRoadBikes.size();
+            int count = 0;
+            for (RoadBike bike : mRoadBikes) {
+                if (bike.getAtStation()) {
+                    count++;
+                }
+            }
+            mRoadAvailable = count;
+
+            if (context.getClass().getSimpleName().equals("StationActivity")) {
+                StationActivity activity = (StationActivity) context;
+
+                // update StationActivity's Availability views
+                activity.updateRoadAvailability(mRoadAvailable);
+
+                // update StationActivity's bike lists
+                activity.setRoadBikes();
+            }
+
+            if (context.getClass().getSimpleName().equals("ReserveActivity")) {
+                ReserveActivity activity = (ReserveActivity) context;
+
+                // update ReserveActivity's bike lists
+                activity.setRoadBikes();
+            }
+
+            if (context.getClass().getSimpleName().equals("OtherBikesActivity")) {
+                OtherBikesActivity activity = (OtherBikesActivity) context;
+
+                // update OtherBikesActivity's bike lists
+                //activity.setRoadBikes();
+            }
         }
     }
 
     private class AddGenericBikeAsyncTask extends AsyncTask<GenericBike, Void, Void> {
         @Override
         protected Void doInBackground(GenericBike... params) {
-            GenericBikeApi.Builder builder = new GenericBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
-                    new AndroidJsonFactory(), null)
-                    .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
-            GenericBikeApi service = builder.build();
+            if (sGenericBikeService == null) {
+                GenericBikeApi.Builder builder = new GenericBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
+                sGenericBikeService = builder.build();
+            }
             try {
                 GenericBike bike = params[0];
-                Log.e("Debug", "Inserting bike...");
-                service.insert(bike);
-                Log.e("Debug", "Done inserting bike.");
+                sGenericBikeService.insert(bike).execute();
+            } catch (IOException e) {e.printStackTrace(); }
+            return null;
+        }
+    }
+
+    private class AddErrandBikeAsyncTask extends AsyncTask<ErrandBike, Void, Void> {
+        @Override
+        protected Void doInBackground(ErrandBike... params) {
+            if (sErrandBikeService == null) {
+                ErrandBikeApi.Builder builder = new ErrandBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
+                sErrandBikeService = builder.build();
+            }
+            try {
+                ErrandBike bike = params[0];
+                sErrandBikeService.insert(bike).execute();
+            } catch (IOException e) {e.printStackTrace(); }
+            return null;
+        }
+    }
+
+    private class AddRoadBikeAsyncTask extends AsyncTask<RoadBike, Void, Void> {
+        @Override
+        protected Void doInBackground(RoadBike... params) {
+            if (sRoadBikeService == null) {
+                RoadBikeApi.Builder builder = new RoadBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
+                sRoadBikeService = builder.build();
+            }
+            try {
+                RoadBike bike = params[0];
+                sRoadBikeService.insert(bike).execute();
             } catch (IOException e) {e.printStackTrace(); }
             return null;
         }
