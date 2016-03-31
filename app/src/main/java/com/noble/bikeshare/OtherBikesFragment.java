@@ -9,6 +9,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.noble.backend.errandBikeApi.model.ErrandBike;
+import com.noble.backend.genericBikeApi.model.GenericBike;
+import com.noble.backend.roadBikeApi.model.RoadBike;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,17 +57,41 @@ public class OtherBikesFragment extends Fragment {
 
     private void updateUI() {
         BikeDatabase database = BikeDatabase.get(getActivity());
-        List<Bike> bikes = database.getBikes();
+        OtherBikesActivity activity = (OtherBikesActivity) getActivity();
+
+        List<GenericBike> subListGenBikes = null;
+        List <ErrandBike> subListErrBikes = null;
+        List <RoadBike> subListRBikes = null;
 
         // filter for sublist of bikes we want
-        List<Bike> subListBikes = new ArrayList<>();
-        for (Bike bike : bikes) {
-            if (bike.getBikeType().equals(mBikeType) && bike.isAtStation()) {
-                subListBikes.add(bike);
+
+        if (mBikeType.equals("Generic Bike")) {
+            subListGenBikes = new ArrayList<>();
+            List<GenericBike> genBikes = activity.setGenericBikes(database);
+            for (GenericBike bike : genBikes) {
+                if (bike.getAtStation()) {
+                    subListGenBikes.add(bike);
+                }
+            }
+        } else if (mBikeType.equals("Errand Bike")) {
+            subListErrBikes = new ArrayList<>();
+            List<ErrandBike> errBikes = activity.setErrandBikes(database);
+            for (ErrandBike bike : errBikes) {
+                if (bike.getAtStation()) {
+                    subListErrBikes.add(bike);
+                }
+            }
+        } else {
+            subListRBikes = new ArrayList<>();
+            List<RoadBike> rBikes = activity.setRoadBikes(database);
+            for (RoadBike bike : rBikes) {
+                if (bike.getAtStation()) {
+                    subListRBikes.add(bike);
+                }
             }
         }
 
-        mAdapter = new OtherBikesAdapter(subListBikes);
+        mAdapter = new OtherBikesAdapter(subListGenBikes, subListErrBikes, subListRBikes);
         mOtherBikesRecyclerView.setAdapter(mAdapter);
     }
 
@@ -92,10 +120,14 @@ public class OtherBikesFragment extends Fragment {
     }
 
     private class OtherBikesAdapter extends RecyclerView.Adapter<OtherBikesHolder> {
-        private List<Bike> mBikes;
+        private List<GenericBike> mGenericBikes;
+        private List<ErrandBike> mErrandBikes;
+        private List<RoadBike> mRoadBikes;
 
-        public OtherBikesAdapter(List<Bike> bikes) {
-            mBikes = bikes;
+        public OtherBikesAdapter(List<GenericBike> genBikes, List<ErrandBike> errBikes, List<RoadBike> rBikes) {
+            mGenericBikes = genBikes;
+            mErrandBikes = errBikes;
+            mRoadBikes = rBikes;
         }
 
         @Override
@@ -108,14 +140,30 @@ public class OtherBikesFragment extends Fragment {
 
         @Override
         public void onBindViewHolder(OtherBikesHolder holder, int position) {
-            Bike bike = mBikes.get(position);
-            holder.mBikeIdTextView.setText(bike.getBikeType() + ": " + bike.getId());
-            holder.setBikeId(bike.getId());
+            if (mGenericBikes != null) {
+                GenericBike bike = mGenericBikes.get(position);
+                holder.mBikeIdTextView.setText("Generic Bike " + bike.getId().intValue());
+                holder.setBikeId(bike.getId().intValue());
+            } else if (mErrandBikes != null) {
+                ErrandBike bike = mErrandBikes.get(position);
+                holder.mBikeIdTextView.setText("Errand Bike " + bike.getId().intValue());
+                holder.setBikeId(bike.getId().intValue());
+            } else {
+                RoadBike bike = mRoadBikes.get(position);
+                holder.mBikeIdTextView.setText("Road Bike " + bike.getId().intValue());
+                holder.setBikeId(bike.getId().intValue());
+            }
         }
 
         @Override
         public int getItemCount() {
-            return mBikes.size();
+            if (mGenericBikes != null) {
+                return mGenericBikes.size();
+            } else if (mErrandBikes != null) {
+                return mErrandBikes.size();
+            } else {
+                return mRoadBikes.size();
+            }
         }
     }
 }

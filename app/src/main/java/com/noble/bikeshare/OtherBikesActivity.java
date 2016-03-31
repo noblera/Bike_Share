@@ -7,6 +7,12 @@ import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import com.noble.backend.errandBikeApi.model.ErrandBike;
+import com.noble.backend.genericBikeApi.model.GenericBike;
+import com.noble.backend.roadBikeApi.model.RoadBike;
+
+import java.util.List;
+
 public class OtherBikesActivity extends SingleFragmentActivity {
 
     public static final String EXTRA_BIKE_TYPE = "com.noble.bikeshare.bike_type";
@@ -14,6 +20,10 @@ public class OtherBikesActivity extends SingleFragmentActivity {
     public static final String EXTRA_NEW_BIKE_ID = "com.noble.bikeshare.new_bike_id";
 
     private int mId;
+
+    private List<GenericBike> mGenericBikes;
+    private List<ErrandBike> mErrandBikes;
+    private List<RoadBike> mRoadBikes;
 
     public static Intent newIntent(Context packageContext, String bikeType) {
         Intent intent = new Intent(packageContext, OtherBikesActivity.class);
@@ -24,7 +34,18 @@ public class OtherBikesActivity extends SingleFragmentActivity {
 
     public void updateBikeId(int id) {
         mId = id;
-        //Toast.makeText(this, "OtherBikesActivity: " + mId, Toast.LENGTH_SHORT).show();
+    }
+
+    public List<GenericBike> setGenericBikes(BikeDatabase db) {
+        return db.getGenericBikes();
+    }
+
+    public List<ErrandBike> setErrandBikes(BikeDatabase db) {
+        return db.getErrandBikes();
+    }
+
+    public List<RoadBike> setRoadBikes(BikeDatabase db) {
+        return db.getRoadBikes();
     }
 
     @Override

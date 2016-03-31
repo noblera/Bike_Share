@@ -12,6 +12,11 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.noble.backend.errandBikeApi.model.ErrandBike;
+import com.noble.backend.genericBikeApi.model.GenericBike;
+import com.noble.backend.roadBikeApi.model.RoadBike;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class StationActivity extends FragmentActivity {
@@ -34,7 +39,51 @@ public class StationActivity extends FragmentActivity {
     private Boolean mBikeReserved = false;
     private int mReservedId;
     private BikeDatabase mDatabase;
-    private List<Bike> mBikes;
+    private List<GenericBike> mGenericBikes;
+    private List<ErrandBike> mErrandBikes;
+    private List<RoadBike> mRoadBikes;
+
+    public void updateGenericAvailability(int num) {
+        if (num >= 6) {
+            mGenericAvailabilityBar.setBackgroundColor(Color.GREEN);
+        } else if (num > 0 && num <= 5) {
+            mGenericAvailabilityBar.setBackgroundColor(Color.RED);
+        } else {
+            mGenericAvailabilityBar.setBackgroundColor(Color.BLACK);
+        }
+    }
+
+    public void updateErrandAvailability(int num) {
+        if (num >= 6) {
+            mErrandAvailabilityBar.setBackgroundColor(Color.GREEN);
+        } else if (num > 0 && num <= 5) {
+            mErrandAvailabilityBar.setBackgroundColor(Color.RED);
+        } else {
+            mErrandAvailabilityBar.setBackgroundColor(Color.BLACK);
+        }
+    }
+
+    public void updateRoadAvailability(int num) {
+        if (num >= 6) {
+            mRoadAvailabilityBar.setBackgroundColor(Color.GREEN);
+        } else if (num > 0 && num <= 5) {
+            mRoadAvailabilityBar.setBackgroundColor(Color.RED);
+        } else {
+            mRoadAvailabilityBar.setBackgroundColor(Color.BLACK);
+        }
+    }
+
+    public void setGenericBikes() {
+        mGenericBikes = mDatabase.getGenericBikes();
+    }
+
+    public void setErrandBikes() {
+        mErrandBikes = mDatabase.getErrandBikes();
+    }
+
+    public void setRoadBikes() {
+        mRoadBikes = mDatabase.getRoadBikes();
+    }
 
     public void updateReserveStatus(boolean bikeReturned) {
         if (bikeReturned) {
@@ -78,38 +127,16 @@ public class StationActivity extends FragmentActivity {
 
         // mock database of bikes
         mDatabase = BikeDatabase.get(this);
-        mBikes = mDatabase.getBikes();
 
         mStationLocation = (TextView) findViewById(R.id.location_text_view);
         mStationLocation.setText("Sadler Center");
 
         // Set up availability bars
         mGenericAvailabilityBar = findViewById(R.id.generic_availability_bar);
-        if (mDatabase.getGenericAvailable() >= 6) {
-            mGenericAvailabilityBar.setBackgroundColor(Color.GREEN);
-        } else if (mDatabase.getGenericAvailable() > 0 && mDatabase.getGenericAvailable() <= 5) {
-            mGenericAvailabilityBar.setBackgroundColor(Color.RED);
-        } else {
-            mGenericAvailabilityBar.setBackgroundColor(Color.BLACK);
-        }
 
         mErrandAvailabilityBar = findViewById(R.id.errand_availability_bar);
-        if (mDatabase.getErrandAvailable() >= 6) {
-            mErrandAvailabilityBar.setBackgroundColor(Color.GREEN);
-        } else if (mDatabase.getErrandAvailable() > 0 && mDatabase.getErrandAvailable() <= 5) {
-            mErrandAvailabilityBar.setBackgroundColor(Color.RED);
-        } else {
-            mErrandAvailabilityBar.setBackgroundColor(Color.BLACK);
-        }
 
         mRoadAvailabilityBar = findViewById(R.id.road_availability_bar);
-        if (mDatabase.getRoadAvailable() >= 6) {
-            mRoadAvailabilityBar.setBackgroundColor(Color.GREEN);
-        } else if (mDatabase.getRoadAvailable() > 0 && mDatabase.getRoadAvailable() <= 5) {
-            mRoadAvailabilityBar.setBackgroundColor(Color.RED);
-        } else {
-            mRoadAvailabilityBar.setBackgroundColor(Color.BLACK);
-        }
 
         mGenericButton = (ImageButton) findViewById(R.id.generic_button);
         mGenericButton.setOnClickListener(new View.OnClickListener() {
@@ -147,9 +174,9 @@ public class StationActivity extends FragmentActivity {
                     }
 
                     // Find a generic bike to reserve
-                    for (int i = 0; i < mBikes.size(); i++) {
-                        if (mBikes.get(i).getBikeType().equals("Generic Bike") && mBikes.get(i).isAtStation()) {
-                            mReservedId = mBikes.get(i).getId();
+                    for (int i = 0; i < mGenericBikes.size(); i++) {
+                        if (mGenericBikes.get(i).getAtStation()) {
+                            mReservedId = mGenericBikes.get(i).getId().intValue();
                             break;
                         }
                     }
@@ -205,9 +232,9 @@ public class StationActivity extends FragmentActivity {
                     }
 
                     // Find an errand bike to reserve
-                    for (int i = 0; i < mBikes.size(); i++) {
-                        if (mBikes.get(i).getBikeType().equals("Errand Bike") && mBikes.get(i).isAtStation()) {
-                            mReservedId = mBikes.get(i).getId();
+                    for (int i = 0; i < mErrandBikes.size(); i++) {
+                        if (mErrandBikes.get(i).getAtStation()) {
+                            mReservedId = mErrandBikes.get(i).getId().intValue();
                             break;
                         }
                     }
@@ -262,9 +289,9 @@ public class StationActivity extends FragmentActivity {
                     }
 
                     // Find a road bike to reserve
-                    for (int i = 0; i < mBikes.size(); i++) {
-                        if (mBikes.get(i).getBikeType().equals("Road Bike") && mBikes.get(i).isAtStation()) {
-                            mReservedId = mBikes.get(i).getId();
+                    for (int i = 0; i < mRoadBikes.size(); i++) {
+                        if (mRoadBikes.get(i).getAtStation()) {
+                            mReservedId = mRoadBikes.get(i).getId().intValue();
                             break;
                         }
                     }

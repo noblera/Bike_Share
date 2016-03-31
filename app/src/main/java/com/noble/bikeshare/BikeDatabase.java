@@ -181,20 +181,11 @@ public class BikeDatabase {
 
                 //update StationActivity's bike lists
                 activity.setGenericBikes();
-            }
-
-            if (context.getClass().getSimpleName().equals("ReserveActivity")) {
+            } else if (context.getClass().getSimpleName().equals("ReserveActivity")) {
                 ReserveActivity activity = (ReserveActivity) context;
 
                 //update ReserveActivity's bike lists
                 activity.setGenericBikes();
-            }
-
-            if (context.getClass().getSimpleName().equals("OtherBikesActivity")) {
-                OtherBikesActivity activity = (OtherBikesActivity) context;
-
-                // update OtherBikesActivity's bike lists
-                //activity.setGenericBikes();
             }
         }
     }
@@ -238,20 +229,11 @@ public class BikeDatabase {
 
                 // update StationActivity's bike lists
                 activity.setErrandBikes();
-            }
-
-            if (context.getClass().getSimpleName().equals("ReserveActivity")) {
+            } else if (context.getClass().getSimpleName().equals("ReserveActivity")) {
                 ReserveActivity activity = (ReserveActivity) context;
 
                 // update ReserveActivity's bike lists
                 activity.setErrandBikes();
-            }
-
-            if (context.getClass().getSimpleName().equals("OtherBikesActivity")) {
-                OtherBikesActivity activity = (OtherBikesActivity) context;
-
-                // update OtherBikesActivity's bike lists
-                //activity.setErrandBikes();
             }
         }
     }
@@ -295,72 +277,12 @@ public class BikeDatabase {
 
                 // update StationActivity's bike lists
                 activity.setRoadBikes();
-            }
-
-            if (context.getClass().getSimpleName().equals("ReserveActivity")) {
+            } else if (context.getClass().getSimpleName().equals("ReserveActivity")) {
                 ReserveActivity activity = (ReserveActivity) context;
 
                 // update ReserveActivity's bike lists
                 activity.setRoadBikes();
             }
-
-            if (context.getClass().getSimpleName().equals("OtherBikesActivity")) {
-                OtherBikesActivity activity = (OtherBikesActivity) context;
-
-                // update OtherBikesActivity's bike lists
-                //activity.setRoadBikes();
-            }
-        }
-    }
-
-    private class AddGenericBikeAsyncTask extends AsyncTask<GenericBike, Void, Void> {
-        @Override
-        protected Void doInBackground(GenericBike... params) {
-            if (sGenericBikeService == null) {
-                GenericBikeApi.Builder builder = new GenericBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
-                        new AndroidJsonFactory(), null)
-                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
-                sGenericBikeService = builder.build();
-            }
-            try {
-                GenericBike bike = params[0];
-                sGenericBikeService.insert(bike).execute();
-            } catch (IOException e) {e.printStackTrace(); }
-            return null;
-        }
-    }
-
-    private class AddErrandBikeAsyncTask extends AsyncTask<ErrandBike, Void, Void> {
-        @Override
-        protected Void doInBackground(ErrandBike... params) {
-            if (sErrandBikeService == null) {
-                ErrandBikeApi.Builder builder = new ErrandBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
-                        new AndroidJsonFactory(), null)
-                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
-                sErrandBikeService = builder.build();
-            }
-            try {
-                ErrandBike bike = params[0];
-                sErrandBikeService.insert(bike).execute();
-            } catch (IOException e) {e.printStackTrace(); }
-            return null;
-        }
-    }
-
-    private class AddRoadBikeAsyncTask extends AsyncTask<RoadBike, Void, Void> {
-        @Override
-        protected Void doInBackground(RoadBike... params) {
-            if (sRoadBikeService == null) {
-                RoadBikeApi.Builder builder = new RoadBikeApi.Builder(AndroidHttp.newCompatibleTransport(),
-                        new AndroidJsonFactory(), null)
-                        .setRootUrl("https://banded-coder-125919.appspot.com/_ah/api/");
-                sRoadBikeService = builder.build();
-            }
-            try {
-                RoadBike bike = params[0];
-                sRoadBikeService.insert(bike).execute();
-            } catch (IOException e) {e.printStackTrace(); }
-            return null;
         }
     }
 }
