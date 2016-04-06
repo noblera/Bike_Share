@@ -139,6 +139,7 @@ public class ReserveActivity extends AppCompatActivity {
         mBikeType = getIntent().getStringExtra(EXTRA_BIKE_TYPE);
         mId = getIntent().getIntExtra(EXTRA_ID, 0);
 
+
         if (mBikeType.equals("Generic Bike")) {
             if (mDatabase.getGenericBike(mId).getAtStation()) {
                 mBikeUnlocked = false;
@@ -237,10 +238,18 @@ public class ReserveActivity extends AppCompatActivity {
                             } catch (IOException e) { }
 
                             if (mUnlockButton.getText().toString().equals("Unlock")) {
-                                String tmp_pass = "test";
-                                byte[] byte_pass = tmp_pass.getBytes();
+                                String otp;
+                                if (mBikeType.equals("Generic Bike")) {
+                                    mDatabase.updateBikeLists(ReserveActivity.this);
+                                    otp = mDatabase.getGenericBike(mId).getOtp();
+                                } else if (mBikeType.equals("Errand Bike")) {
+                                    otp = mDatabase.getErrandBike(mId).getOtp();
+                                } else {
+                                    otp = mDatabase.getRoadBike(mId).getOtp();
+                                }
+                                byte[] otpBytes = otp.getBytes();
                                 try {
-                                    mOutStream.write(byte_pass);
+                                    mOutStream.write(otpBytes);
                                 } catch (IOException e) { }
                                 // sent password, wait for confirmation
                                 byte[] buffer = new byte[1024];

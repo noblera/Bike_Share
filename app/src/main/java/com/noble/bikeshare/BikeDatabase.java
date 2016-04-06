@@ -55,6 +55,14 @@ public class BikeDatabase {
         new GetRoadBikesAsyncTask(context).execute();
     }
 
+    public void updateBikeLists(Context context) {
+        new GetGenericBikesAsyncTask(context).execute();
+
+        new GetErrandBikesAsyncTask(context).execute();
+
+        new GetRoadBikesAsyncTask(context).execute();
+    }
+
     public List<GenericBike> getGenericBikes() {
         return mGenericBikes;
     }
