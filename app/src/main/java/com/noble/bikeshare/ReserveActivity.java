@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -65,6 +66,8 @@ public class ReserveActivity extends AppCompatActivity {
     private TextView mLocationTextView;
     private TextView mBikeTypeTextView;
 
+    private ImageView mBikeImage;
+
     private BikeDatabase mDatabase;
     private List<GenericBike> mGenericBikes;
     private List<ErrandBike> mErrandBikes;
@@ -113,6 +116,15 @@ public class ReserveActivity extends AppCompatActivity {
         mBikeType = bikeType;
         mId = id;
         mBikeTypeTextView.setText(mBikeType + " " + mId);
+
+        if (mBikeType.equals("Generic Bike")) {
+            mBikeImage.setImageResource(R.drawable.generic_bike);
+        } else if (mBikeType.equals("Errand Bike")) {
+            mBikeImage.setImageResource(R.drawable.errand_bike);
+        } else {
+            mBikeImage.setImageResource(R.drawable.road_bike);
+        }
+
         updateBikeStatus(mBikeReturned, mBikeUnlocked, mBikeType, mId);
     }
 
@@ -132,6 +144,7 @@ public class ReserveActivity extends AppCompatActivity {
             setRoadBikes();
         }
 
+        // set up widgets
         mLocation = getIntent().getStringExtra(EXTRA_LOCATION);
         mLocationTextView = (TextView) findViewById(R.id.reserve_location_text_view);
         mLocationTextView.setText(mLocation);
@@ -163,6 +176,15 @@ public class ReserveActivity extends AppCompatActivity {
 
         mBikeTypeTextView = (TextView) findViewById(R.id.bike_type_text_view);
         mBikeTypeTextView.setText(mBikeType + " " + mId);
+
+        mBikeImage = (ImageView) findViewById(R.id.bike_image);
+        if (mBikeType.equals("Generic Bike")) {
+            mBikeImage.setImageResource(R.drawable.generic_bike);
+        } else if (mBikeType.equals("Errand Bike")) {
+            mBikeImage.setImageResource(R.drawable.errand_bike);
+        } else {
+            mBikeImage.setImageResource(R.drawable.road_bike);
+        }
 
         mUnlockButton = (Button) findViewById(R.id.unlock_bike_button);
         if (!mBikeUnlocked) {

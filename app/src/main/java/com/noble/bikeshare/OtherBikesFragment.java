@@ -7,6 +7,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.noble.backend.errandBikeApi.model.ErrandBike;
@@ -97,13 +98,15 @@ public class OtherBikesFragment extends Fragment {
 
     private class OtherBikesHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         private TextView mBikeIdTextView;
+        private ImageView mBikeImage;
         private int mId;
 
         public OtherBikesHolder(View itemView) {
             super(itemView);
             itemView.setOnClickListener(this);
 
-            mBikeIdTextView = (TextView) itemView;
+            mBikeIdTextView = (TextView) itemView.findViewById(R.id.list_item_bikes_id);
+            mBikeImage = (ImageView) itemView.findViewById(R.id.list_item_bikes_image);
         }
 
         public void setBikeId(int id) {
@@ -134,7 +137,7 @@ public class OtherBikesFragment extends Fragment {
         public OtherBikesHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
             View view = layoutInflater
-                    .inflate(android.R.layout.simple_list_item_1, parent, false);
+                    .inflate(R.layout.list_item_bikes, parent, false);
             return new OtherBikesHolder(view);
         }
 
@@ -143,14 +146,17 @@ public class OtherBikesFragment extends Fragment {
             if (mGenericBikes != null) {
                 GenericBike bike = mGenericBikes.get(position);
                 holder.mBikeIdTextView.setText("Generic Bike " + bike.getId().intValue());
+                holder.mBikeImage.setImageResource(R.drawable.generic_bike);
                 holder.setBikeId(bike.getId().intValue());
             } else if (mErrandBikes != null) {
                 ErrandBike bike = mErrandBikes.get(position);
                 holder.mBikeIdTextView.setText("Errand Bike " + bike.getId().intValue());
+                holder.mBikeImage.setImageResource(R.drawable.errand_bike);
                 holder.setBikeId(bike.getId().intValue());
             } else {
                 RoadBike bike = mRoadBikes.get(position);
                 holder.mBikeIdTextView.setText("Road Bike " + bike.getId().intValue());
+                holder.mBikeImage.setImageResource(R.drawable.road_bike);
                 holder.setBikeId(bike.getId().intValue());
             }
         }
