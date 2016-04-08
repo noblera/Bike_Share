@@ -134,10 +134,6 @@ public class ReserveActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reserve);
 
-        GenericBike bike = new GenericBike();
-        bike.setId(new Long(1));
-        new UpdateGenericBikeAsyncTask().execute(bike);
-
         mDatabase = BikeDatabase.get(this);
         if (mGenericBikes == null) {
             setGenericBikes();
