@@ -187,6 +187,20 @@ public class ReserveActivity extends AppCompatActivity {
             mBikeImage.setImageResource(R.drawable.road_bike);
         }
 
+        // new thread for updating OTPs periodically
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    mDatabase.updateBikeLists(ReserveActivity.this);
+                    try {
+                        Thread.sleep(1000 * 30);
+                    } catch (InterruptedException e) { }
+                }
+            }
+        };
+        Thread t = new Thread(r);
+        t.start();
         mUnlockButton = (Button) findViewById(R.id.unlock_bike_button);
         mUnlockButton.setText("Unlock Bike");
 
@@ -257,7 +271,6 @@ public class ReserveActivity extends AppCompatActivity {
 
                                 String otp;
                                 if (mBikeType.equals("Generic Bike")) {
-                                    mDatabase.updateBikeLists(ReserveActivity.this);
                                     otp = mDatabase.getGenericBike(mId).getOtp();
                                 } else if (mBikeType.equals("Errand Bike")) {
                                     otp = mDatabase.getErrandBike(mId).getOtp();
