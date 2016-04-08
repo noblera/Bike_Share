@@ -20,4 +20,5 @@
     <string name="unreserve_bike_title">Unreserve Bike?</string>
     <string name="other_bikes_button">Other Bikes</string>
     <string name="different_bike_button">Different Bike Category</string>
+    <string name="return_button">Return Bike</string>
 </resources>

@@ -28,10 +28,27 @@
         android:layout_height="wrap_content"
         android:padding="24dp" />
 
-    <Button
-        android:id="@+id/unlock_bike_button"
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center" >
+
+        <Button
+            android:id="@+id/unlock_bike_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="24dp" />
+
+        <Button
+            android:id="@+id/return_bike_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:padding="24dp"
+            android:text="@string/return_button" />
+    </LinearLayout>
 
     <Button
         android:id="@+id/reserve_more_options_button"
